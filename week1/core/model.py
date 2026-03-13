@@ -40,7 +40,7 @@ class MiniLlama(nn.Module):
         self.norm = RMSNorm(embed_dim) # Напиши код
         self.lm_head = nn.Linear(embed_dim, vocab_size) # Напиши код
 
-    def forward(self, tokens):
+    def forward(self, tokens, past_key_values=None):
 
         # 1. Получаем эмбеддинги токенов
         x = self.tok_embeddings(tokens) # [B, T, C]
@@ -48,15 +48,16 @@ class MiniLlama(nn.Module):
         # (В реальной Llama здесь применяется RoPE к Query и Key внутри Attention,
         # но для простоты архитектуры сегодня мы пропустим интеграцию RoPE внутрь твоего
         # CustomMultiHeadAttention, чтобы не сломать вчерашний код. Оставим RoPE на десерт).
-
+        presents = []
         # 2. Пропускаем через все слои Трансформера
-        for layer in self.layers:
-            x = layer(x)
-
+        for i, layer in enumerate(self.layers):
+            past_kv = past_key_values[i] if past_key_values is not None else None
+            x, present_kv = layer(x, past_key_value=past_kv)
+            presents.append(present_kv)
         # 3. Финальная нормализация
         x = self.norm(x)
 
         # 4. Получаем логиты (вероятности) для словаря
         logits = self.lm_head(x) # [B, T, Vocab_Size]
 
-        return logits
+        return logits, presents

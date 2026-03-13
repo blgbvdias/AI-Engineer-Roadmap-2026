@@ -36,7 +36,7 @@ class SwiGLU(nn.Module):
         # Оператор * здесь - это поэлементное умножение (Hadamard product)
         # ...
         return self.w3(F.silu(self.w1(x)) * self.w2(x))
-
+#
 class LlamaTransformerBlock(nn.Module):
     def __init__(self, dim, num_heads, hidden_dim):
         super().__init__()
@@ -46,7 +46,7 @@ class LlamaTransformerBlock(nn.Module):
         self.attention_norm = RMSNorm(dim=dim)
         self.ffn_norm = RMSNorm(dim=dim)
 
-    def forward(self, x):
+    def forward(self, x, past_key_value=None):
         # ТВОЯ ЗАДАЧА №3: Собрать Pre-Norm архитектуру с Residual связями
         # 1. Сохрани x (residual)
         # 2. Пропусти x через attention_norm
@@ -60,6 +60,7 @@ class LlamaTransformerBlock(nn.Module):
 
         # Верни итоговый x
         # ...
-        x = x + self.attention(self.attention_norm(x))
+        attn_out, present_key_value = self.attention(self.attention_norm(x), past_key_value)
+        x = x + attn_out
         x = x + self.feed_forward(self.ffn_norm(x))
-        return x
+        return x, present_key_value
